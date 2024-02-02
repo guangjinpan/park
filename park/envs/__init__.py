@@ -82,3 +82,9 @@ register(
     entry_point='park.envs.multi_dim_index:MultiDimIndexEnv'
 )
 
+
+
+register(
+    env_id='XR_position',
+    entry_point='park.envs.Position_XR:PositionXREnv'
+)

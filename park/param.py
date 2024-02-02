@@ -151,3 +151,17 @@ parser.add_argument('--ra_shuffle', type=bool, default=True,
 
 
 config, _ = parser.parse_known_args()
+
+
+
+# -- XR position/communication Simulator --
+# parser.add_argument('--XR_positon_Number_BS', type=str, default=5,
+#                     help='The Number of BS (default: 4)')
+# parser.add_argument('--circuit_remote_port', type=int, default=None,
+#                     help='The remote port of circuit simulation server (default: None)')
+# parser.add_argument('--circuit_tmp_path', type=str, default='./tmp',
+#                     help='The temporary path to the simulator (default: ./tmp)')
+# parser.add_argument('--circuit_env_type', type=str, default='pointed',
+#                     help='The circuit environment type (default: pointed)')
+# parser.add_argument('--circuit_total_steps', type=int, default=5,
+#                     help='The total steps of the environment (default: 5)')
