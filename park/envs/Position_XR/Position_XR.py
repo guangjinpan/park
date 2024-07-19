@@ -53,7 +53,7 @@ class PositionXREnv(core.Env):
         X Yin, A Jindal, V Sekar, B Sinopoli
         https://dl.acm.org/citation.cfm?id = 2787486
     """
-    def __init__(self, BS_number=4, User_number = 10, bandwidth_total = 50e7,Radius = 1000, rmin = 30 ):
+    def __init__(self, BS_number=4, User_number = 10, bandwidth_total = 5e7,Radius = 1000, rmin = 30 ):
         # set up seed
         self.seed(config.seed)
         # load all trace files
@@ -150,8 +150,8 @@ class PositionXREnv(core.Env):
             action_association[0,i]=np.argmax(action[:,i])
             if (action_association[0,i]>=self.BS_number):
                 print("action_association error")
-        action_association=action_association.astype(np.int16)
-        return action_association
+
+        return action_association.astype(np.int16)
             
     def BW_Norm(self,action_association,action_BW_positioning,action_BW_commnunication):
         for i in range(self.BS_number):
@@ -159,6 +159,7 @@ class PositionXREnv(core.Env):
             sum_data=action_BW_positioning[i,0]+np.sum(action_BW_commnunication[0,ind])
             action_BW_commnunication[0,ind]=action_BW_commnunication[0,ind]/sum_data
             action_BW_positioning[i,0]=action_BW_positioning[i,0]/sum_data
+        return action_BW_positioning,action_BW_commnunication
             
             
             
@@ -166,13 +167,24 @@ class PositionXREnv(core.Env):
 
         action_association, action_bitrate,action_BW_positioning,action_BW_commnunication=self.get_action(action)
         
-        action_association=self.action_association_best(self.SNR)
-        # action_association=self.action_association_best(action_association)
-        self.BW_Norm(action_association,action_BW_positioning,action_BW_commnunication)
-        action_BW_positioning=action_BW_positioning*self.bandwidth_total
+        #选择关联方式 根据SNR还是根据强化学习的输出结果
+        # action_association=self.action_association_best(self.SNR)
+        print("action_association",action_association)
+        action_association=self.action_association_best(action_association)
+        print("action_association",action_association)
+
+        #选择码率
+        self.Video.SetBitrate(action_bitrate*self.max_bitrate)        
+        
+        #选择带宽分配方式 ADMM还是根据强化学习结果
+        # action_BW_positioning,action_BW_commnunication=ADMM
+        action_BW_positioning,action_BW_commnunication=self.BW_Norm(action_association,action_BW_positioning,action_BW_commnunication)
+        # print("action_BW_commnunication",action_BW_commnunication)
+        # print("action_BW_positioning",action_BW_positioning)
+        # action_BW_positioning=action_BW_positioning*self.bandwidth_total
+        # action_BW_commnunication=action_BW_commnunication*self.bandwidth_total
         
         
-        self.Video.SetBitrate(action_bitrate*self.max_bitrate)
         
         
         
@@ -194,13 +206,13 @@ class PositionXREnv(core.Env):
         SINR_communication=np.zeros((1,self.User_number))
         for i in range(self.User_number):
             SINR_communication[0,i]=self.SNR[action_association[0,i],i]
-        UE_rate=1e-3*action_BW_commnunication*self.bandwidth_total*np.log2(1+SINR_communication)
-        # print("SINR_communication",SINR_communication)
-        # print("UE_rate",UE_rate)
+        UE_rate=1/60*action_BW_commnunication*self.bandwidth_total*np.log2(1+SINR_communication)
         trans_success=np.zeros((1,self.User_number))
         trans_success[self.video_bitrate_frame-UE_rate<0]=1
+        print(trans_success)
         Tvalue=(action_bitrate-self.beta_1*np.abs(action_bitrate-self.last_bitrate))
         TQoE=trans_success*Tvalue
+        print(TQoE)
         
         reward=np.sum((1-self.beta_2)*PQoE+self.beta_2*TQoE)
         self.last_bitrate=1e5*np.ones((1,self.User_number))
